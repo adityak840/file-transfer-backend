@@ -79,6 +79,42 @@ io.on("connection", (socket) => {
     console.log(`Socket ${socket.id} joined receive room: ${socket.id}`);
   });
 
+  // When sender wants to request a transfer
+  socket.on(
+    "request-transfer",
+    ({
+      targetId,
+      fileName,
+      fileSize,
+    }: {
+      targetId: string;
+      fileName: string;
+      fileSize: number;
+    }) => {
+      console.log(
+        `Transfer request from ${socket.id} to ${targetId} for file ${fileName} (${fileSize} bytes)`
+      );
+      // Notify recipient about incoming transfer request
+      io.to(targetId).emit("incoming-transfer", {
+        senderId: socket.id,
+        fileName,
+        fileSize,
+      });
+    }
+  );
+
+  // When recipient accepts the transfer
+  socket.on("transfer-accepted", ({ senderId }: { senderId: string }) => {
+    console.log(`${socket.id} accepted transfer from ${senderId}`);
+    io.to(senderId).emit("transfer-accepted", { receiverId: socket.id });
+  });
+
+  // When recipient rejects the transfer
+  socket.on("transfer-rejected", ({ senderId }: { senderId: string }) => {
+    console.log(`${socket.id} rejected transfer from ${senderId}`);
+    io.to(senderId).emit("transfer-rejected", { receiverId: socket.id });
+  });
+
   // Notify recipient of incoming file
   socket.on(
     "start-transfer",
@@ -92,7 +128,7 @@ io.on("connection", (socket) => {
       fileSize: number;
     }) => {
       console.log(`Starting transfer to ${targetId}:`, fileName, fileSize);
-      io.to(targetId).emit("incoming-transfer", {
+      io.to(targetId).emit("transfer-started", {
         senderId: socket.id,
         fileName,
         fileSize,
@@ -121,7 +157,6 @@ io.on("connection", (socket) => {
         console.warn("Invalid chunk received");
         return;
       }
-
       io.to(targetId).emit("receive-chunk", {
         chunk,
         index,

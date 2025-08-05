@@ -9,10 +9,9 @@ const connectedDevices: Map<string, { id: string; name?: string }> = new Map();
 
 const app: Express = express();
 
-// Enable CORS for local frontend
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST"],
     credentials: true,
   })
@@ -23,7 +22,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST"],
     credentials: true,
   },
